@@ -1,0 +1,100 @@
+/*Write Morse Code
+*
+* Type a word or phrase into the serial monitor bar and hit enter. The
+* word or phrase will be translated into morse code and the dots and
+* dash letters will be printed in the serial monitor. Each Morse letter
+* will be seperated by a /. Additionally, an led will light up along
+* with the translated Morse letters.
+*
+* The program waits until a string is sent from the serial monitor bar. The program
+* then goes through the inputted string char by char. The program finds the matching
+* char in an alphabet array, notes the index of the char in the array, and then finds
+* and prints the dot dash combination at the same index in a morse code array. To display
+* the morse code the program then goes char by char through the dot dash combination and
+* turns the led and buzzer on for set times if it reads either a dot or a dash.
+*/
+int led = 13; //led pin
+int buzzer = 8; //buzzer pin
+String phrase; //word being written into serial monitor
+int totalChars; //total number of chars in phrase
+//morse code array
+String dotdash[26] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..",
+".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.",
+"...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.."};
+//alphabet array
+char alphabet[26];
+void setup() {
+pinMode(led, OUTPUT); //set led as output
+pinMode(buzzer, OUTPUT); //set buzzer as output
+Serial.begin(9600); // Turn the Serial Protocol ON
+//put letters into alphabet array
+for (int i = 0; i < 26; i++) {
+alphabet[i] = 65 + i;
+}
+Serial.println("Type a word or phrase into the serial monitor bar and hit enter. The");
+Serial.println("word or phrase will be translated into morse code and the dots and");
+Serial.println("dash letters will be printed in the serial monitor. Each Morse letter");
+Serial.println("will be seperated by a /. Additionally, an led will light up along");
+Serial.println("with the translated Morse letters.");
+}
+void loop() {
+//when word is sent from serial monitor then convert each letter into morse code
+//print the code and light up the led accordingly
+while (Serial.available()) {
+Serial.println();
+phrase = Serial.readString(); //read phrase from serial monitor
+Serial.println(phrase);
+phrase.toUpperCase(); //set phrase to all upper case characters
+totalChars = phrase.length(); //total length of phrase
+int index = 0;
+//go through each character in word and find corresponding morse code
+while (index < totalChars) {
+char letter = phrase.charAt(index);
+//go through alphabet array to find correct letter
+//then find morse code at same index in dotdash array
+for (int i = 0; i < 26; i++) {
+if (letter == alphabet[i]) {
+lights(dotdash[i]); //light up led with morse pattern and print code
+}
+}
+//delay if there is a space between words
+if (letter == ' ') {
+delay(1000);
+}
+Serial.print("/");
+index++;
+}
+}
+}
+//lights (takes in String code, outputs nothing)
+//turn led on and off at correct intervals for inputted morse code
+//and print code
+void lights(String code) {
+int codelength = code.length(); //number of chars in code string
+int i = 0;
+//go through each symbol in morse code and light up led accordingly
+while (i < codelength) {
+char symbol = code.charAt(i);
+//if '.' the light up led and turn buzzer on for 200 ms
+if (symbol == '.') {
+digitalWrite(led, HIGH);
+digitalWrite(buzzer, HIGH);
+delay(200);
+digitalWrite(led, LOW);
+digitalWrite(buzzer, LOW);
+delay(200);
+}
+//if '-' then light up led and turn buzzer on for 400 ms
+if (symbol == '-') {
+digitalWrite(led, HIGH);
+digitalWrite(buzzer, HIGH);
+delay(400);
+digitalWrite(led, LOW);
+digitalWrite(buzzer, LOW);
+delay(200);
+}
+i++;
+}
+delay(500);
+Serial.print(code);
+}
