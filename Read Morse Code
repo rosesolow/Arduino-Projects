@@ -1,0 +1,136 @@
+/* Arduino Morse Code Machine
+*
+* Press the button to input Morse code that will be translated into English
+* letter characters and displayed in the serial monitor. Morse code is an alphabet
+* where letters are represented by short and long signals of light or sound
+* (dots "." short, dashes "-" long). Pressing the button for less than the dotwait
+* time will result in a dot and pressing the button for less than the dashwait
+* time will result in a dash. The dots and dashes will be displayed in the serial
+* monitor as they are being inputted. The code will be translated and displayed as
+* an English letter word after the wordwait time.
+*
+* The program will measure the time the button is being pressed and based on that time
+* print either a dot or dash. The program will save the series of dots and dashes inputted
+* into a string called code. While the button is not being pressed the program will
+* measure the unpressed time and do one of three things: wait until the button is
+* pressed again, print a "/" to indicate a new letter, or print the english letter
+* translation of the morse code. To translate the morse code into english letters the program
+* loops through an array of the dot dash morse letters, finds the index at which the matching
+* dot dash combination equals the code, and then finds the english letter at the same index
+* within an alphabet array. That english letter is then saved into a string called fullword
+* which contains the full english letter translation.
+*/
+int buzzer = 8; //buzzer pin
+int led = 13; //led pin
+int button = 0; //button pin
+int threshold = 300; //threshold for button pressed reading
+int dotwait = 200; //wait time for dot symbol (ms)
+int dashwait = 1000; //wait time for dash symbol (ms)
+int wordwait = 2000; //wait time for new word (ms)
+int letterwait = 1000; //wait time for new letter (ms)
+String code = ""; //string pattern for dot dash comboination in morse code
+String fullword = ""; //string pattern for english letter word
+int reading = analogRead(button); //button reading
+bool space = false; //checks if space entered between single letters in morse code
+bool enter = false; //checks if a new line has been printed
+//morse code array
+String dotdash[26] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..",
+".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.",
+"...", "-", "..-", "...-", ".--", "-..-", "-.--", "--.."};
+//alphabet array
+char alphabet[26];
+void setup() {
+pinMode(button, INPUT); //button pin
+pinMode(buzzer, OUTPUT); //buzzer pin
+pinMode(led, OUTPUT); //led pin
+//put letters into alphabet array
+for (int i = 0; i < 26; i++) {
+alphabet[i] = 65 + i;
+}
+Serial.begin(9600);
+Serial.println("Press the button to input Morse code that will be translated into English");
+Serial.println("letter characters and displayed in the serial monitor. Morse code is an alphabet");
+Serial.println("where letters are represented by short and long signals of light or sound");
+Serial.println("(dots '.' short, dashes '-' long). Pressing the button for less than the dotwait");
+Serial.println("time will result in a dot and pressing the button for less than the dashwait");
+Serial.println("time will result in a dash. The dots and dashes will be displayed in the serial");
+Serial.println("monitor as they are being inputted. The code will be translated and displayed as");
+Serial.println("an English letter word after the wordwait time.");
+}
+void loop() {
+unsigned long initTime = millis(); //initial time
+//if button pushed check if dot or dash
+if (reading > threshold) {
+initTime = millis();
+digitalWrite(buzzer, HIGH); //turn buzzer on
+digitalWrite(led, HIGH); //turn led on
+//wait while button is being pressed
+while (reading > threshold) {
+reading = analogRead(button);
+}
+unsigned long buzztime = millis() - initTime; //time button was being pushed
+//check if buzztime is greater than 50 ms (if button is sensed to being pushed less than
+//that time possible to be a spurious button press so ignore it)
+if (buzztime > 50) {
+//print . if under dotwait
+if (buzztime < dotwait) {
+code = code + ".";//add . to code
+Serial.print(".");
+}
+//print - if under dashwait
+else if (buzztime < dashwait) {
+Serial.print("-");
+code = code + "-";//add - to code
+}
+}
+}
+//if button not being pressed then wait for one of three things:
+//new information being sent by button
+//print a "/" for a new letter to be inputted
+//print the fullword inputted
+else {
+unsigned long t = millis(); //initial time
+digitalWrite(buzzer, LOW); //turn buzzer off
+digitalWrite(led,LOW); //turn led off
+bool exitwhile = false; //sets to exit while loop
+while (exitwhile == false) {
+reading = analogRead(button);
+//if button not being pressed for greater than letterwait
+//then add letter to fullword
+if ((millis() - t) > letterwait) {
+//if no space already entered then continue to avoid continually printing "/"
+if (space == false) {
+//loop through dotdash array to find correct morse code
+//then add corresponding letter in alphabet array to fullword
+for (int i = 0; i < 26; i++) {
+if (code == dotdash[i]) {
+fullword = fullword + alphabet[i];
+}
+}
+Serial.print("/");
+space = true; //a space between letters has been entered ("/" has been printed) so set space to true
+code = "";//reset code
+}
+}
+//if button not being pressed for greater than wordwait
+//then print fullword
+if ((millis() - t) > wordwait) {
+//if no new line has already been printed then continue to avoid continually printing new line
+if (enter == false) {
+Serial.println();
+Serial.println(fullword);
+fullword = ""; //reset fullword
+space = false;
+enter = true;
+exitwhile = true;
+}
+}
+//if button being pressed then set to exit loop
+if (reading > threshold) {
+space = false;
+enter = false;
+exitwhile = true;
+}
+}
+}
+}
